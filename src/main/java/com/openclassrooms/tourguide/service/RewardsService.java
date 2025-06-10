@@ -2,6 +2,7 @@ package com.openclassrooms.tourguide.service;
 
 import java.util.List;
 
+import lombok.Setter;
 import org.springframework.stereotype.Service;
 
 import gpsUtil.GpsUtil;
@@ -18,7 +19,8 @@ public class RewardsService {
 
 	// proximity in miles
     private int defaultProximityBuffer = 10;
-	private int proximityBuffer = defaultProximityBuffer;
+	@Setter
+    private int proximityBuffer = defaultProximityBuffer;
 	private int attractionProximityRange = 200;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
@@ -27,12 +29,8 @@ public class RewardsService {
 		this.gpsUtil = gpsUtil;
 		this.rewardsCentral = rewardCentral;
 	}
-	
-	public void setProximityBuffer(int proximityBuffer) {
-		this.proximityBuffer = proximityBuffer;
-	}
-	
-	public void setDefaultProximityBuffer() {
+
+    public void setDefaultProximityBuffer() {
 		proximityBuffer = defaultProximityBuffer;
 	}
 	
@@ -42,7 +40,10 @@ public class RewardsService {
 		
 		for(VisitedLocation visitedLocation : userLocations) {
 			for(Attraction attraction : attractions) {
-				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
+				if(user
+						.getUserRewards()
+						.stream()
+						.filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
 					if(nearAttraction(visitedLocation, attraction)) {
 						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
 					}

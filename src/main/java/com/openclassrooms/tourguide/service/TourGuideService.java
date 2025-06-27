@@ -1,5 +1,7 @@
 package com.openclassrooms.tourguide.service;
 
+import com.openclassrooms.tourguide.dto.NearByAttractionDto;
+import com.openclassrooms.tourguide.exception.LocationNotFoundException;
 import com.openclassrooms.tourguide.helper.InternalTestHelper;
 import com.openclassrooms.tourguide.tracker.Tracker;
 import com.openclassrooms.tourguide.user.User;
@@ -7,14 +9,11 @@ import com.openclassrooms.tourguide.user.UserReward;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -32,12 +31,16 @@ import tripPricer.TripPricer;
 
 @Service
 public class TourGuideService {
-	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
+
+
+	private final Logger log= LoggerFactory.getLogger(TourGuideService.class);
+
 	private final GpsUtil gpsUtil;
 	private final RewardsService rewardsService;
 	private final TripPricer tripPricer = new TripPricer();
 	public final Tracker tracker;
 	boolean testMode = true;
+
 
 	public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
 		this.gpsUtil = gpsUtil;
@@ -46,31 +49,48 @@ public class TourGuideService {
 		Locale.setDefault(Locale.US);
 
 		if (testMode) {
-			logger.info("TestMode enabled");
-			logger.debug("Initializing users");
+			log.info("TestMode enabled");
+			log.debug("Initializing users");
 			initializeInternalUsers();
-			logger.debug("Finished initializing users");
+			log.debug("Finished initializing users");
 		}
 		tracker = new Tracker(this);
 		addShutDownHook();
 	}
 
 	public List<UserReward> getUserRewards(User user) {
+
 		return user.getUserRewards();
 	}
 
+	// à relire voir pour l'utilisation de la variable optimal ?
 	public VisitedLocation getUserLocation(User user) {
-		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
-				: trackUserLocation(user);
-		return visitedLocation;
-	}
+        VisitedLocation visitedLocation;
+        try {
+            visitedLocation = (!user.getVisitedLocations().isEmpty()) ? user.getLastVisitedLocation()
+                    : trackUserLocation(user).get();
+        } catch (ExecutionException | InterruptedException e) {
+			log.info("Echec lors de la récupération de la position de l'utilisateur");
+            throw new LocationNotFoundException("Erreur lors de la récupération de la position de l'utilisateur.", e);
+        }
+        return visitedLocation;
+    }
 
 	public User getUser(String userName) {
-		return internalUserMap.get(userName);
+		User user = internalUserMap.get(userName);
+		if (user == null) {
+			log.warn("Utilisateur '{}' introuvable dans internalUserMap", userName);
+		} else {
+			log.info("Utilisateur '{}' trouvé dans internalUserMap", userName);
+		}
+		return user;
+		//return internalUserMap.get(userName);
 	}
 
 	public List<User> getAllUsers() {
-		return internalUserMap.values().stream().collect(Collectors.toList());
+		return
+                new ArrayList<>(internalUserMap
+                        .values());
 	}
 
 	public void addUser(User user) {
@@ -88,23 +108,65 @@ public class TourGuideService {
 		return providers;
 	}
 
-	public VisitedLocation trackUserLocation(User user) {
+	// à relire - optimal ?
+	private final Executor ex = Executors.newFixedThreadPool(100);
+
+	public CompletableFuture<VisitedLocation> trackUserLocation(User user)   {
+
+		return CompletableFuture.supplyAsync(() -> {
+
 		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
 		user.addToVisitedLocations(visitedLocation);
-		rewardsService.calculateRewards(user);
-		return visitedLocation;
-	}
-
-	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
-		List<Attraction> nearbyAttractions = new ArrayList<>();
-		for (Attraction attraction : gpsUtil.getAttractions()) {
-			if (rewardsService.isWithinAttractionProximity(attraction, visitedLocation.location)) {
-				nearbyAttractions.add(attraction);
-			}
+		try {
+			log.info("Avant le calcul des rewards pour '{}'", user.getUserName());
+			rewardsService.calculateRewards(user).get(); // arrête l'asynchrone - récupère donnée
+			log.info("Après le calcul des rewards pour '{}'", user.getUserName());
+		} catch (ExecutionException  | InterruptedException e ){
+			throw new RuntimeException(e);
 		}
 
-		return nearbyAttractions;
+		return visitedLocation;
+		}, ex);
 	}
+
+
+	// Etape 3 : 5 attractions les + proches
+	public List<NearByAttractionDto> getNearByAttractions(VisitedLocation visitedLocation, User user) {
+
+		// Localisation du user
+		Location locationOfUser = visitedLocation.location;
+
+		// On doit parcourir ttes les attractions avec stream 26 in gpsUtil
+		List<NearByAttractionDto> nearAttractionList =  gpsUtil.getAttractions()
+				.stream()
+				.map(attraction -> {
+					double distanceBetweenAttractionsAndUser = rewardsService.getDistance(locationOfUser, attraction);
+
+					// On calcule les points attribués à une attraction et un user
+					int rewardPoints;
+					try {
+						rewardPoints = rewardsService.getRewardPoints(attraction, user).get();
+					} catch (InterruptedException | ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+
+					// retourner attractionName, latitude longitude user longitude latitude disantce et les points
+                    return new NearByAttractionDto(
+							attraction.attractionName,
+							attraction.latitude,
+							attraction.longitude,
+							locationOfUser.latitude,
+							locationOfUser.longitude,
+							distanceBetweenAttractionsAndUser,
+							rewardPoints
+					);
+                }).sorted(Comparator.comparing(nearByAttractionDto ->
+						nearByAttractionDto.distanceMiles)).limit(5).toList();
+
+        return nearAttractionList;
+    }
+
+
 
 	private void addShutDownHook() {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -132,9 +194,10 @@ public class TourGuideService {
 			User user = new User(UUID.randomUUID(), userName, phone, email);
 			generateUserLocationHistory(user);
 
+			log.info("Utilisateur internet initialisé : {}", userName );
 			internalUserMap.put(userName, user);
 		});
-		logger.debug("Created " + InternalTestHelper.getInternalUserNumber() + " internal test users.");
+		log.debug("Created " + InternalTestHelper.getInternalUserNumber() + " internal test users.");
 	}
 
 	private void generateUserLocationHistory(User user) {

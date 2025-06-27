@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -23,7 +25,7 @@ import com.openclassrooms.tourguide.user.UserReward;
 public class TestRewardsService {
 
 	@Test
-	public void userGetRewards() {
+	public void userGetRewards() throws ExecutionException, InterruptedException {
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 
@@ -33,7 +35,10 @@ public class TestRewardsService {
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
 		Attraction attraction = gpsUtil.getAttractions().get(0);
 		user.addToVisitedLocations(new VisitedLocation(user.getUserId(), attraction, new Date()));
-		tourGuideService.trackUserLocation(user);
+
+		CompletableFuture<VisitedLocation> completableFuture = tourGuideService.trackUserLocation(user);
+		completableFuture.get();  // attente fin traitement
+
 		List<UserReward> userRewards = user.getUserRewards();
 		tourGuideService.tracker.stopTracking();
 		assertTrue(userRewards.size() == 1);
@@ -49,7 +54,7 @@ public class TestRewardsService {
 
 	@Disabled // Needs fixed - can throw ConcurrentModificationException
 	@Test
-	public void nearAllAttractions() {
+	public void nearAllAttractions() throws ExecutionException, InterruptedException {
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 		rewardsService.setProximityBuffer(Integer.MAX_VALUE);
@@ -57,8 +62,15 @@ public class TestRewardsService {
 		InternalTestHelper.setInternalUserNumber(1);
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
-		rewardsService.calculateRewards(tourGuideService.getAllUsers().get(0));
+		//
+		User user = tourGuideService.getAllUsers().get(0);
+		CompletableFuture<Void> completableFuture = rewardsService.calculateRewards(user);
+		completableFuture.get();
+
+		//rewardsService.calculateRewards(user).get();
+
 		List<UserReward> userRewards = tourGuideService.getUserRewards(tourGuideService.getAllUsers().get(0));
+		System.out.println("Rewards obtenues : " + userRewards.size());
 		tourGuideService.tracker.stopTracking();
 
 		assertEquals(gpsUtil.getAttractions().size(), userRewards.size());

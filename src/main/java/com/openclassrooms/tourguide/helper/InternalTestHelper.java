@@ -1,7 +1,11 @@
 package com.openclassrooms.tourguide.helper;
 
 import lombok.Getter;
+import lombok.Setter;
 
+
+@Setter
+@Getter
 public class InternalTestHelper {
 
 	// Set this default up to 100,000 for testing

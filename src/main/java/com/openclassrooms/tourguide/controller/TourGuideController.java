@@ -1,19 +1,26 @@
-package com.openclassrooms.tourguide;
+package com.openclassrooms.tourguide.controller;
 
 import java.util.List;
 
+import com.openclassrooms.tourguide.dto.NearByAttractionDto;
+import com.openclassrooms.tourguide.exception.LocationNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import gpsUtil.location.Attraction;
 import gpsUtil.location.VisitedLocation;
 
 import com.openclassrooms.tourguide.service.TourGuideService;
 import com.openclassrooms.tourguide.user.User;
 import com.openclassrooms.tourguide.user.UserReward;
 
+import org.springframework.web.server.ResponseStatusException;
 import tripPricer.Provider;
 
 @RestController
@@ -21,15 +28,27 @@ public class TourGuideController {
 
 	@Autowired
 	TourGuideService tourGuideService;
+
+    private Logger log = LoggerFactory.getLogger(TourGuideController.class);
+
+
 	
-    @RequestMapping("/")
+    @GetMapping("/")
     public String index() {
+
         return "Greetings from TourGuide!";
     }
     
-    @RequestMapping("/getLocation") 
-    public VisitedLocation getLocation(@RequestParam String userName) {
-    	return tourGuideService.getUserLocation(getUser(userName));
+    @GetMapping("/getLocation")
+    public VisitedLocation getLocation(@RequestParam String userName)  {
+        // changé
+/*        User user = tourGuideService.getUser(userName);
+        if(user == null) {
+            throw new LocationNotFoundException("Utilisateur non trouvé: " + userName, null);
+        }
+        return tourGuideService.getUserLocation(user);*/
+        return tourGuideService.getUserLocation(getUser(userName));
+
     }
     
     //  TODO: Change this method to no longer return a List of Attractions.
@@ -41,16 +60,27 @@ public class TourGuideController {
         // The distance in miles between the user's location and each of the attractions.
         // The reward points for visiting each Attraction.
         //    Note: Attraction reward points can be gathered from RewardsCentral
-    @RequestMapping("/getNearbyAttractions") 
-    public List<Attraction> getNearbyAttractions(@RequestParam String userName) {
+    @GetMapping("/getNearByAttractions")
+    public List<NearByAttractionDto> getNearByAttractions(@RequestParam String userName) {
+
+        User user = getUser(userName);
     	VisitedLocation visitedLocation = tourGuideService.getUserLocation(getUser(userName));
-    	return tourGuideService.getNearByAttractions(visitedLocation);
+        List<NearByAttractionDto> nearByAttractionDtoList = tourGuideService.getNearByAttractions(visitedLocation, user);
+        log.info("La liste des 5 attractions les plus proches : {} ", nearByAttractionDtoList);
+    	return nearByAttractionDtoList;
     }
+
+
     
-    @RequestMapping("/getRewards") 
+    @GetMapping("/getRewards")
     public List<UserReward> getRewards(@RequestParam String userName) {
-    	return tourGuideService.getUserRewards(getUser(userName));
+        User user = tourGuideService.getUser(userName);
+        List<UserReward> userRewardList = tourGuideService.getUserRewards(user);
+    	 return userRewardList;
     }
+
+
+
        
     @RequestMapping("/getTripDeals")
     public List<Provider> getTripDeals(@RequestParam String userName) {

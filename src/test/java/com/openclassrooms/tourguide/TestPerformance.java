@@ -23,7 +23,7 @@ import com.openclassrooms.tourguide.service.TourGuideService;
 import com.openclassrooms.tourguide.user.User;
 
 
-@Disabled("Tests à désactiver pour l'intégration continue")
+//@Disabled("Tests à désactiver pour l'intégration continue")
 public class TestPerformance {
 
 	/*

@@ -40,5 +40,5 @@ jobs:
       - name: Install rewardCentral
         run: mvn install:install-file -Dfile=libs/rewardCentral.jar -DgroupId=rewardCentral -DartifactId=rewardCentral -Dversion=1.0.0 -Dpackaging=jar
 
-      - name: Build with Maven (skip tests)
-        run: mvn clean install -DskipTests
+      - name: Build and run tests with Maven
+        run: mvn clean install

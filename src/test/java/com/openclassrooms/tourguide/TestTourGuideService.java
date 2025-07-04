@@ -22,7 +22,7 @@ import com.openclassrooms.tourguide.service.TourGuideService;
 import com.openclassrooms.tourguide.user.User;
 import tripPricer.Provider;
 
-@Disabled("Tests à désactiver pour l'intégration continue")
+//@Disabled("Tests à désactiver pour l'intégration continue")
 public class TestTourGuideService {
 
 	//@Disabled

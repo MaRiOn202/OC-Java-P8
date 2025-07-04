@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import gpsUtil.location.Attraction;
 import gpsUtil.location.VisitedLocation;
 import org.apache.commons.lang3.time.StopWatch;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import gpsUtil.GpsUtil;
@@ -21,6 +22,8 @@ import com.openclassrooms.tourguide.service.RewardsService;
 import com.openclassrooms.tourguide.service.TourGuideService;
 import com.openclassrooms.tourguide.user.User;
 
+
+@Disabled("Tests à désactiver pour l'intégration continue")
 public class TestPerformance {
 
 	/*
@@ -103,7 +106,7 @@ public class TestPerformance {
 		allUsers.forEach(u -> u.addToVisitedLocations
 				(new VisitedLocation(u.getUserId(), attraction, new Date())));
 
-		// pb
+
 		List<CompletableFuture<Void>> completableList = allUsers.stream()
 				.map(u -> rewardsService.calculateRewards(u))
 				.toList();

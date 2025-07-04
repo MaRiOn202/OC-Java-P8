@@ -5,10 +5,12 @@ import java.util.*;
 import gpsUtil.location.VisitedLocation;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import tripPricer.Provider;
 
 @Setter
 @Getter
+@ToString
 public class User {
 	private final UUID userId;
 	private final String userName;

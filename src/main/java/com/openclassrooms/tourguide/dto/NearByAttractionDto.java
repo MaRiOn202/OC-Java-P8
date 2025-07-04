@@ -3,12 +3,14 @@ package com.openclassrooms.tourguide.dto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 
 // Etape 3 : 5 attractions les + proches
 
 @Setter
 @Getter
+@ToString
 @AllArgsConstructor
 public class NearByAttractionDto {
 

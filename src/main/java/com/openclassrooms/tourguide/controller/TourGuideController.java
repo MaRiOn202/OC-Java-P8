@@ -63,10 +63,10 @@ public class TourGuideController {
     @GetMapping("/getNearByAttractions")
     public List<NearByAttractionDto> getNearByAttractions(@RequestParam String userName) {
 
-        User user = getUser(userName);
-    	VisitedLocation visitedLocation = tourGuideService.getUserLocation(getUser(userName));
+        User user = tourGuideService.getUser(userName);
+    	VisitedLocation visitedLocation = tourGuideService.getUserLocation(user);
         List<NearByAttractionDto> nearByAttractionDtoList = tourGuideService.getNearByAttractions(visitedLocation, user);
-        log.info("La liste des 5 attractions les plus proches : {} ", nearByAttractionDtoList);
+        log.info("La liste des 5 attractions les plus proches de {} : {} ", user.getUserName(), nearByAttractionDtoList);
     	return nearByAttractionDtoList;
     }
 
@@ -82,11 +82,12 @@ public class TourGuideController {
 
 
        
-    @RequestMapping("/getTripDeals")
+    @GetMapping("/getTripDeals")
     public List<Provider> getTripDeals(@RequestParam String userName) {
     	return tourGuideService.getTripDeals(getUser(userName));
     }
-    
+
+    @GetMapping("/getUser")
     private User getUser(String userName) {
     	return tourGuideService.getUser(userName);
     }

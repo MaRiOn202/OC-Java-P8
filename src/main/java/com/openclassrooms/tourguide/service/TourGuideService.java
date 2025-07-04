@@ -77,14 +77,7 @@ public class TourGuideService {
     }
 
 	public User getUser(String userName) {
-		User user = internalUserMap.get(userName);
-		if (user == null) {
-			log.warn("Utilisateur '{}' introuvable dans internalUserMap", userName);
-		} else {
-			log.info("Utilisateur '{}' trouvé dans internalUserMap", userName);
-		}
-		return user;
-		//return internalUserMap.get(userName);
+		return internalUserMap.get(userName);
 	}
 
 	public List<User> getAllUsers() {
@@ -175,6 +168,10 @@ public class TourGuideService {
 			}
 		});
 	}
+
+
+
+
 
 	/**********************************************************************************
 	 * 

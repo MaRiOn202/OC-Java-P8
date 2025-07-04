@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import gpsUtil.GpsUtil;
 import rewardCentral.RewardCentral;
 import com.openclassrooms.tourguide.service.RewardsService;
+import tripPricer.TripPricer;
 
 @Configuration
 public class TourGuideModule {
@@ -17,9 +18,9 @@ public class TourGuideModule {
 	}
 	
 	@Bean
-	public RewardsService getRewardsService() {
+	public TripPricer getTripPricer() {
 
-		return new RewardsService(getGpsUtil(), getRewardCentral());
+		return new TripPricer();
 	}
 	
 	@Bean

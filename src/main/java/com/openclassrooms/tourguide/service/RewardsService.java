@@ -24,7 +24,7 @@ import java.util.concurrent.Executors;
 
 
 @Slf4j
-//@Service
+@Service
 @AllArgsConstructor
 public class RewardsService {
 

@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.openclassrooms.tourguide.dto.NearByAttractionDto;
 import com.openclassrooms.tourguide.exception.LocationNotFoundException;
+import com.openclassrooms.tourguide.service.RewardsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,9 @@ public class TourGuideController {
 
 	@Autowired
 	TourGuideService tourGuideService;
+
+    @Autowired
+    RewardsService rewardsService;
 
     private Logger log = LoggerFactory.getLogger(TourGuideController.class);
 
@@ -76,7 +80,9 @@ public class TourGuideController {
     public List<UserReward> getRewards(@RequestParam String userName) {
         User user = tourGuideService.getUser(userName);
         List<UserReward> userRewardList = tourGuideService.getUserRewards(user);
-    	 return userRewardList;
+        return userRewardList;
+/*        rewardsService.calculateRewards(user).get();
+        return user.getUserRewards();*/
     }
 
 
@@ -88,7 +94,7 @@ public class TourGuideController {
     }
 
     @GetMapping("/getUser")
-    private User getUser(String userName) {
+    private User getUser(@RequestParam String userName) {
     	return tourGuideService.getUser(userName);
     }
    

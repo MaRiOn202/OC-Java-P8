@@ -26,6 +26,7 @@ import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
 
+import rewardCentral.RewardCentral;
 import tripPricer.Provider;
 import tripPricer.TripPricer;
 
@@ -42,9 +43,9 @@ public class TourGuideService {
 	boolean testMode = true;
 
 
-	public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
+	public TourGuideService(GpsUtil gpsUtil, RewardCentral rewardCentral) {
 		this.gpsUtil = gpsUtil;
-		this.rewardsService = rewardsService;
+		this.rewardsService = new RewardsService(gpsUtil, rewardCentral);
 		
 		Locale.setDefault(Locale.US);
 

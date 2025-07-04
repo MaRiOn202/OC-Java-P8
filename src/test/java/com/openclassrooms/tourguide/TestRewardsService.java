@@ -32,7 +32,8 @@ public class TestRewardsService {
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 
 		InternalTestHelper.setInternalUserNumber(0);
-		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
+		//
+		TourGuideService tourGuideService = new TourGuideService(gpsUtil, new RewardCentral());
 
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
 		Attraction attraction = gpsUtil.getAttractions().get(0);
@@ -63,9 +64,11 @@ public class TestRewardsService {
 		rewardsService.setProximityBuffer(Integer.MAX_VALUE);
 
 		InternalTestHelper.setInternalUserNumber(1);
-		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		//
+		TourGuideService tourGuideService = new TourGuideService(gpsUtil, new RewardCentral());
+
+
 		User user = tourGuideService.getAllUsers().get(0);
 		CompletableFuture<Void> completableFuture = rewardsService.calculateRewards(user);
 		completableFuture.get();

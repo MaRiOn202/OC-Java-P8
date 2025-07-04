@@ -30,8 +30,6 @@ public class TourGuideController {
 	@Autowired
 	TourGuideService tourGuideService;
 
-    @Autowired
-    RewardsService rewardsService;
 
     private Logger log = LoggerFactory.getLogger(TourGuideController.class);
 
@@ -81,8 +79,6 @@ public class TourGuideController {
         User user = tourGuideService.getUser(userName);
         List<UserReward> userRewardList = tourGuideService.getUserRewards(user);
         return userRewardList;
-/*        rewardsService.calculateRewards(user).get();
-        return user.getUserRewards();*/
     }
 
 

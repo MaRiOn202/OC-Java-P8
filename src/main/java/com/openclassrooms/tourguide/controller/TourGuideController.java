@@ -3,15 +3,9 @@ package com.openclassrooms.tourguide.controller;
 import java.util.List;
 
 import com.openclassrooms.tourguide.dto.NearByAttractionDto;
-import com.openclassrooms.tourguide.exception.LocationNotFoundException;
-import com.openclassrooms.tourguide.service.RewardsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,47 +15,61 @@ import com.openclassrooms.tourguide.service.TourGuideService;
 import com.openclassrooms.tourguide.user.User;
 import com.openclassrooms.tourguide.user.UserReward;
 
-import org.springframework.web.server.ResponseStatusException;
 import tripPricer.Provider;
 
+
+/**
+ *  Controller REST permettant de gérer les requêtes
+ *  Il expose des endpoints pour récupérer la localisation actuelle d'un user,
+ *  les attractions les plus proches, les récompenses obtenues, les offres de voyage personnalisées,
+ *  ou encore les informations d'un user
+ *
+ */
 @RestController
 public class TourGuideController {
 
-	@Autowired
-	TourGuideService tourGuideService;
+
+	private final TourGuideService tourGuideService;
 
 
     private Logger log = LoggerFactory.getLogger(TourGuideController.class);
 
+    public TourGuideController(TourGuideService tourGuideService) {
+        this.tourGuideService = tourGuideService;
+    }
 
-	
+
+    /**
+     *  Endpoint home de l'application
+     *
+     * @return un message de bienvenue
+     */
     @GetMapping("/")
     public String index() {
 
         return "Greetings from TourGuide!";
     }
-    
+
+
+    /**
+     *  Récupère la dernière position connue de l'utilisateur.
+     *
+     * @param userName
+     * @return la dernière localisation visitée
+     */
     @GetMapping("/getLocation")
     public VisitedLocation getLocation(@RequestParam String userName)  {
-        // changé
-/*        User user = tourGuideService.getUser(userName);
-        if(user == null) {
-            throw new LocationNotFoundException("Utilisateur non trouvé: " + userName, null);
-        }
-        return tourGuideService.getUserLocation(user);*/
         return tourGuideService.getUserLocation(getUser(userName));
 
     }
-    
-    //  TODO: Change this method to no longer return a List of Attractions.
- 	//  Instead: Get the closest five tourist attractions to the user - no matter how far away they are.
- 	//  Return a new JSON object that contains:
-    	// Name of Tourist attraction, 
-        // Tourist attractions lat/long, 
-        // The user's location lat/long, 
-        // The distance in miles between the user's location and each of the attractions.
-        // The reward points for visiting each Attraction.
-        //    Note: Attraction reward points can be gathered from RewardsCentral
+
+
+    /**
+     *  Récupère les 5 attractions les plus proches de l'utilisateur
+     *
+     * @param userName
+     * @return une liste de 5 attractions
+     */
     @GetMapping("/getNearByAttractions")
     public List<NearByAttractionDto> getNearByAttractions(@RequestParam String userName) {
 
@@ -73,7 +81,12 @@ public class TourGuideController {
     }
 
 
-    
+    /**
+     *  Récupère toutes les récompenses obtenues par l'utilisateur
+     *
+     * @param userName
+     * @return une liste de UserReward
+     */
     @GetMapping("/getRewards")
     public List<UserReward> getRewards(@RequestParam String userName) {
         User user = tourGuideService.getUser(userName);
@@ -82,15 +95,20 @@ public class TourGuideController {
     }
 
 
-
-       
+    /**
+     *  Récupère les offres de voyage personnalisées pour l'utilisateur
+     *
+     * @param userName
+     * @return une liste de Provider / fournisseurs
+     */
     @GetMapping("/getTripDeals")
     public List<Provider> getTripDeals(@RequestParam String userName) {
     	return tourGuideService.getTripDeals(getUser(userName));
     }
 
-    @GetMapping("/getUser")
-    private User getUser(@RequestParam String userName) {
+
+
+    private User getUser(String userName) {
     	return tourGuideService.getUser(userName);
     }
    

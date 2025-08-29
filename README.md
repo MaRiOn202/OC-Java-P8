@@ -1,9 +1,10 @@
 <h1>Welcome to Tour Guide 👋</h1>
 <p>
   <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-blue.svg?cacheSeconds=2592000" />
+  <img alt="Build" src="https://github.com/MaRiOn202/OC-Java-P8/actions/workflows/ci.yml/badge.svg" />
 </p>
 
-Tour Guide est une application qui facilite la planification de voyages.<br/>
+**Tour Guide** est une application qui facilite la planification de voyages.<br/>
 Visitez des lieux de rêves et gagnez des récompenses. 
 
 
@@ -12,9 +13,11 @@ Visitez des lieux de rêves et gagnez des récompenses.
 
 ## 👷 Technical:
 
-> Java 19  
-> Spring Boot 3.X  
-> JUnit 5  
+> - Java 19  
+> - Spring Boot 3.X  
+> - JUnit 5
+> - Maven
+
 
 ## 💻 Installation
 ### How to have gpsUtil, rewardCentral and tripPricer dependencies available ?

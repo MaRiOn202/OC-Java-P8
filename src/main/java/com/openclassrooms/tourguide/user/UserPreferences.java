@@ -15,25 +15,6 @@ public class UserPreferences {
 	
 	public UserPreferences() {
 	}
-	
-	public void setAttractionProximity(int attractionProximity) {
-		this.attractionProximity = attractionProximity;
-	}
-
-    public void setTripDuration(int tripDuration) {
-		this.tripDuration = tripDuration;
-	}
-
-    public void setTicketQuantity(int ticketQuantity) {
-		this.ticketQuantity = ticketQuantity;
-	}
-
-    public void setNumberOfAdults(int numberOfAdults) {
-		this.numberOfAdults = numberOfAdults;
-	}
-
-    public void setNumberOfChildren(int numberOfChildren) {
-		this.numberOfChildren = numberOfChildren;
-	}
 
 }
+

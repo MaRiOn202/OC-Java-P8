@@ -23,11 +23,11 @@ public class TourGuideModule {
 		return new RewardsService(getGpsUtil(), getRewardCentral());
 	}
 
-	@Bean
+/*	@Bean
 	public TripPricer getTripPricer() {
 
 		return new TripPricer();
-	}
+	}*/
 	
 	@Bean
 	public RewardCentral getRewardCentral() {

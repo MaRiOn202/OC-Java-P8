@@ -28,16 +28,16 @@ public class TestPerformance {
 
 	/*
 	 * A note on performance improvements:
-	 * 
+	 *
 	 * The number of users generated for the high volume tests can be easily
 	 * adjusted via this method:
-	 * 
+	 *
 	 * InternalTestHelper.setInternalUserNumber(100000);
-	 * 
-	 * 
+	 *
+	 *
 	 * These tests can be modified to suit new solutions, just as long as the
 	 * performance metrics at the end of the tests remains consistent.
-	 * 
+	 *
 	 * These are performance metrics that we are trying to hit:
 	 *
 	 * First test :
@@ -59,13 +59,11 @@ public class TestPerformance {
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 		// Users should be incremented up to 100,000, and test finishes within 15
 		// minutes
-		InternalTestHelper.setInternalUserNumber(1);
+		InternalTestHelper.setInternalUserNumber(100);
 
-		//log - A compléter
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardCentral);
 
-		List<User> allUsers = new ArrayList<>();
-		allUsers = tourGuideService.getAllUsers();
+		List<User> allUsers = tourGuideService.getAllUsers();
 
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
@@ -75,10 +73,6 @@ public class TestPerformance {
 				.toList();
 
 		CompletableFuture.allOf(completableList.toArray(new CompletableFuture[0])).get();
-
-		for (User user : allUsers) {
-			tourGuideService.trackUserLocation(user);
-		}
 
 		stopWatch.stop();
 		tourGuideService.tracker.stopTracking();
@@ -96,8 +90,7 @@ public class TestPerformance {
 
 		// Users should be incremented up to 100,000, and test finishes within 20
 		// minutes
-		InternalTestHelper.setInternalUserNumber(1);
-		//log
+		InternalTestHelper.setInternalUserNumber(100);
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 
@@ -105,8 +98,7 @@ public class TestPerformance {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, new RewardCentral());
 
 		Attraction attraction = gpsUtil.getAttractions().get(0);
-		List<User> allUsers = new ArrayList<>();
-		allUsers = tourGuideService.getAllUsers();
+		List<User> allUsers = tourGuideService.getAllUsers();
 		allUsers.forEach(u -> u.addToVisitedLocations
 				(new VisitedLocation(u.getUserId(), attraction, new Date())));
 
@@ -120,6 +112,7 @@ public class TestPerformance {
 		for (User user : allUsers) {
 			assertTrue(user.getUserRewards().size() > 0);
 		}
+
 		stopWatch.stop();
 		tourGuideService.tracker.stopTracking();
 

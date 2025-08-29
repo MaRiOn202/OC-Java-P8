@@ -10,11 +10,7 @@ import com.openclassrooms.tourguide.user.UserReward;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
+import java.util.concurrent.*;
 import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
@@ -22,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import gpsUtil.GpsUtil;
-import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
 
@@ -30,6 +25,15 @@ import rewardCentral.RewardCentral;
 import tripPricer.Provider;
 import tripPricer.TripPricer;
 
+
+
+
+/**
+ *  Service permettant de gérer les users, leur localisation ainsi que les points de récompense
+ *  Fin du service, initialisation des users pour les tests
+ *
+ *
+ */
 @Service
 public class TourGuideService {
 
@@ -42,11 +46,13 @@ public class TourGuideService {
 	public final Tracker tracker;
 	boolean testMode = true;
 
+	private final ExecutorService ex = Executors.newFixedThreadPool(100);
+
 
 	public TourGuideService(GpsUtil gpsUtil, RewardCentral rewardCentral) {
 		this.gpsUtil = gpsUtil;
 		this.rewardsService = new RewardsService(gpsUtil, rewardCentral);
-		
+
 		Locale.setDefault(Locale.US);
 
 		if (testMode) {
@@ -59,24 +65,32 @@ public class TourGuideService {
 		addShutDownHook();
 	}
 
-	// à faire
+
 	public List<UserReward> getUserRewards(User user) {
 
 		return user.getUserRewards();
 	}
 
-	// à relire voir pour l'utilisation de la variable optimal ?
+
+	// à relire voir pour l'utilisation de la variable optimal ? completablefuture / excutor service car appleé 100 000 x
+	/**
+	 *  Méthode permettant de récupérer la dernière position du user
+	 *  Si aucune position n'est enregistrée alors trackUserLocation() est déclenché
+	 *
+	 * @param user
+	 * @return visitedLocation
+	 * @throws LocationNotFoundException si la localisation échoue
+	 */
 	public VisitedLocation getUserLocation(User user) {
-        VisitedLocation visitedLocation;
-        try {
-            visitedLocation = (!user.getVisitedLocations().isEmpty()) ? user.getLastVisitedLocation()
-                    : trackUserLocation(user).get();
-        } catch (ExecutionException | InterruptedException e) {
+		VisitedLocation visitedLocation;
+		try {
+			visitedLocation = (!user.getVisitedLocations().isEmpty()) ? user.getLastVisitedLocation() : trackUserLocation(user).get();
+		} catch (ExecutionException | InterruptedException e) {
 			log.info("Echec lors de la récupération de la position de l'utilisateur");
-            throw new LocationNotFoundException("Erreur lors de la récupération de la position de l'utilisateur.", e);
-        }
-        return visitedLocation;
-    }
+			throw new LocationNotFoundException("Erreur lors de la récupération de la position de l'utilisateur.", e);
+		}
+		return visitedLocation;
+	}
 
 	public User getUser(String userName) {
 		return internalUserMap.get(userName);
@@ -84,8 +98,8 @@ public class TourGuideService {
 
 	public List<User> getAllUsers() {
 		return
-                new ArrayList<>(internalUserMap
-                        .values());
+				new ArrayList<>(internalUserMap
+						.values());
 	}
 
 	public void addUser(User user) {
@@ -94,44 +108,65 @@ public class TourGuideService {
 		}
 	}
 
+
+	/**
+	 * Méthode permettant de récupérer les offres de voyage d'un utilisateur
+	 *
+	 * @param user
+	 * @return providers fournisseurs
+	 */
 	public List<Provider> getTripDeals(User user) {
-		int cumulatativeRewardPoints = user.getUserRewards().stream().mapToInt(i -> i.getRewardPoints()).sum();
+		int cumulativeRewardPoints = user.getUserRewards().stream().mapToInt(i -> i.getRewardPoints()).sum();
 		List<Provider> providers = tripPricer.getPrice(tripPricerApiKey, user.getUserId(),
 				user.getUserPreferences().getNumberOfAdults(), user.getUserPreferences().getNumberOfChildren(),
-				user.getUserPreferences().getTripDuration(), cumulatativeRewardPoints);
+				user.getUserPreferences().getTripDuration(), cumulativeRewardPoints);
 		user.setTripDeals(providers);
 		return providers;
 	}
 
-	// à relire - optimal ?
-	private final Executor ex = Executors.newFixedThreadPool(100);
 
+	/**
+	 *  Méthode permettant de suivre la localisation d'un utilisateur de manière asynchrone
+	 *  et d'appeler calculateRewards
+	 *
+	 * @param user
+	 * @return CompletableFuture indiquant la position visitée
+	 */
 	public CompletableFuture<VisitedLocation> trackUserLocation(User user)   {
 
-		return CompletableFuture.supplyAsync(() -> {
+		//return CompletableFuture.supplyAsync(() -> {
 
-		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-		user.addToVisitedLocations(visitedLocation);
-		try {
-			log.info("Avant le calcul des rewards pour '{}'", user.getUserName());
-			rewardsService.calculateRewards(user).get(); // arrête l'asynchrone - récupère donnée
-			log.info("Après le calcul des rewards pour '{}'", user.getUserName());
-		} catch (ExecutionException  | InterruptedException e ){
-			throw new RuntimeException(e);
-		}
+			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+			user.addToVisitedLocations(visitedLocation);
+			try {
+				log.info("Avant le calcul des rewards pour '{}'", user.getUserName());
+				return rewardsService.calculateRewards(user).thenApply(CompletableVoid -> visitedLocation); // arrête l'asynchrone - récupère donnée
 
-		return visitedLocation;
-		}, ex);
-	}
+			} catch (Exception e ){
+				throw e;
+			}
+
+			//return visitedLocation;
+		//}, ex);
+    }
 
 
-	// Etape 3 : 5 attractions les + proches
+
+
+	/**
+	 *  Méthode permettant de récupérer les 5 attractions les plus proches du user
+	 *  et de calculer la distance et les pts de récompense pour chacune des attractions
+	 *
+	 * @param visitedLocation
+	 * @param user
+	 * @return nearAttractionList de 5 attractions
+	 */
 	public List<NearByAttractionDto> getNearByAttractions(VisitedLocation visitedLocation, User user) {
 
 		// Localisation du user
 		Location locationOfUser = visitedLocation.location;
 
-		// On doit parcourir ttes les attractions avec stream 26 in gpsUtil
+		// On doit parcourir ttes les attractions avec stream - 26 in gpsUtil
 		List<NearByAttractionDto> nearAttractionList =  gpsUtil.getAttractions()
 				.stream()
 				.map(attraction -> {
@@ -142,11 +177,11 @@ public class TourGuideService {
 					try {
 						rewardPoints = rewardsService.getRewardPoints(attraction, user).get();
 					} catch (InterruptedException | ExecutionException e) {
-                        throw new RuntimeException(e);
-                    }
+						throw new RuntimeException(e);
+					}
 
-					// retourner attractionName, latitude longitude user longitude latitude disantce et les points
-                    return new NearByAttractionDto(
+					// retourner attractionName, latitude longitude user longitude latitude distance et les pts
+					return new NearByAttractionDto(
 							attraction.attractionName,
 							attraction.latitude,
 							attraction.longitude,
@@ -155,14 +190,18 @@ public class TourGuideService {
 							distanceBetweenAttractionsAndUser,
 							rewardPoints
 					);
-                }).sorted(Comparator.comparing(nearByAttractionDto ->
+				}).sorted(Comparator.comparing(nearByAttractionDto ->
 						nearByAttractionDto.distanceMiles)).limit(5).toList();
 
-        return nearAttractionList;
-    }
+		return nearAttractionList;
+	}
 
 
-
+	/**
+	 * Hook d'arrêt de l'appli
+	 * Il permet d'arrêter proprement tracker en cours d'exécution
+	 *
+	 */
 	private void addShutDownHook() {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
@@ -176,9 +215,9 @@ public class TourGuideService {
 
 
 	/**********************************************************************************
-	 * 
+	 *
 	 * Methods Below: For Internal Testing
-	 * 
+	 *
 	 **********************************************************************************/
 	private static final String tripPricerApiKey = "test-server-api-key";
 	// Database connection will be used for external users, but for testing purposes
